@@ -229,7 +229,6 @@
 	icon_state = "tiara"
 	inhand_icon_state = "tiara"
 
-
 /obj/item/clothing/head/costume/hairpin
 	name = "fancy hairpin"
 	desc = "A delicate hairpin normally paired with traditional clothing"
@@ -241,3 +240,22 @@
 	desc = "A green metal headband in the shape of a heart."
 	icon_state = "dio_headband"
 	inhand_icon_state = null
+
+/obj/item/clothing/head/costume/motormouth
+	name = "microphone mask"
+	desc = "A mask resembling that of a microphone, with a big grin built in."
+	icon_state = "motormouth"
+	inhand_icon_state = null
+	clothing_flags = SNUG_FIT
+	flags_cover = HEADCOVERSEYES
+	flags_inv = HIDEMASK|HIDEEARS|HIDEEYES|HIDEFACE|HIDEHAIR|HIDEFACIALHAIR|HIDESNOUT
+
+/obj/item/clothing/head/costume/cowboym
+	name = "cowboy mask?"
+	desc = "A mask resembling that of a really tall microphone, with a cowboy hat on top."
+	icon_state = "cowboym"
+	inhand_icon_state = null
+	clothing_flags = SNUG_FIT
+	flags_cover = HEADCOVERSEYES
+	flags_inv = HIDEMASK|HIDEEARS|HIDEEYES|HIDEFACE|HIDEHAIR|HIDEFACIALHAIR|HIDESNOUT
+	worn_y_offset = 3

@@ -8,10 +8,10 @@
 	roundend_category = "vassals"
 	antagpanel_category = "Bloodsucker"
 	job_rank = ROLE_BLOODSUCKER
-	antag_flags = parent_type::antag_flags | FLAG_ANTAG_CAP_IGNORE
 	antag_hud_name = "vassal"
 	show_in_roundend = FALSE
 	hud_icon = 'monkestation/icons/bloodsuckers/bloodsucker_icons.dmi'
+	antag_count_points = 2
 
 	/// The Master Bloodsucker's antag datum.
 	var/datum/antagonist/bloodsucker/master
@@ -82,7 +82,7 @@
 /// This is called when the antagonist is successfully mindshielded.
 /datum/antagonist/vassal/on_mindshield(mob/implanter, mob/living/mob_override)
 	var/mob/living/target = mob_override || owner.current
-	target.log_message("has been deconverted from Vassalization by [implanter]!", LOG_ATTACK, color="#960000")
+	target.log_message("has been deconverted from Vassalization by [key_name(implanter)]!", LOG_ATTACK, color="#960000")
 	owner.remove_antag_datum(/datum/antagonist/vassal)
 	return COMPONENT_MINDSHIELD_DECONVERTED
 
@@ -95,7 +95,6 @@
 /datum/antagonist/vassal/on_gain()
 	ADD_TRAIT(owner, TRAIT_BLOODSUCKER_ALIGNED, REF(src))
 	RegisterSignal(owner.current, COMSIG_ATOM_EXAMINE, PROC_REF(on_examine))
-	RegisterSignal(SSsol, COMSIG_SOL_WARNING_GIVEN, PROC_REF(give_warning))
 	/// Enslave them to their Master
 	if(!master || !istype(master, master))
 		return
@@ -105,7 +104,7 @@
 		master.special_vassals[special_type] |= src
 	master.vassals |= src
 	owner.enslave_mind_to_creator(master.owner.current)
-	owner.current.log_message("has been vassalized by [master.owner.current]!", LOG_ATTACK, color="#960000")
+	owner.current.log_message("has been vassalized by [key_name(master.owner)]!", LOG_ATTACK, color="#960000")
 	/// Give Recuperate Power
 	BuyPower(new /datum/action/cooldown/bloodsucker/recuperate)
 	/// Give Objectives
@@ -118,23 +117,37 @@
 	return ..()
 
 /datum/antagonist/vassal/on_removal()
-	REMOVE_TRAIT(owner, TRAIT_BLOODSUCKER_ALIGNED, REF(src))
-	UnregisterSignal(SSsol, COMSIG_SOL_WARNING_GIVEN)
 	//Free them from their Master
 	if(!QDELETED(master))
 		if(special_type && master.special_vassals[special_type])
-			master.special_vassals[special_type] -= src
+			master.special_vassals.Remove(special_type)
 		master.vassals -= src
 		owner.enslaved_to = null
-	if(owner.current)
-		UnregisterSignal(owner.current, COMSIG_ATOM_EXAMINE)
-		REMOVE_TRAITS_IN(owner.current, BLOODSUCKER_TRAIT)
+
+	var/datum/antagonist/bloodsucker/converted_bloodsucker_datum = owner.current.mind.has_antag_datum(/datum/antagonist/bloodsucker)
+	//If this vassal has become a bloodsucker through ventrue conversion, we do not remove these things - but we do remove a couple other things instead
+	if (!converted_bloodsucker_datum)
+		REMOVE_TRAIT(owner, TRAIT_BLOODSUCKER_ALIGNED, REF(src))
+		if(owner.current)
+			UnregisterSignal(owner.current, COMSIG_ATOM_EXAMINE)
+			REMOVE_TRAITS_IN(owner.current, BLOODSUCKER_TRAIT)
+
+		//Remove Language & Hud
+		owner.current?.remove_language(/datum/language/vampiric)
+		//Remove Vassal Powers
+		QDEL_LIST(powers)
+	else
+		var/datum/action/cooldown/bloodsucker/recuperate/recuperate_power = locate(/datum/action/cooldown/bloodsucker/recuperate) in converted_bloodsucker_datum.powers
+		if (recuperate_power)
+			converted_bloodsucker_datum.RemovePower(recuperate_power)
+
+		var/datum/action/cooldown/bloodsucker/distress/distress_power = locate(/datum/action/cooldown/bloodsucker/distress) in converted_bloodsucker_datum.powers
+		if (distress_power)
+			converted_bloodsucker_datum.RemovePower(distress_power)
+
 	// remove the monitor
 	QDEL_NULL(monitor)
-	//Remove Recuperate Power
-	QDEL_LIST(powers)
-	//Remove Language & Hud
-	owner.current?.remove_language(/datum/language/vampiric)
+
 	return ..()
 
 /datum/antagonist/vassal/on_body_transfer(mob/living/old_body, mob/living/new_body)
